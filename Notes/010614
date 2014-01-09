@@ -1,0 +1,128 @@
+TODO: 
+- Read up on all of the rules
+- Strategy session
+	- What should we look out for in the rules?
+	- What are general strategies? (Don't think about code)
+- Read up on some general strategies people do from past things
+- Get sense on everyone's experience
+	- Git? Java? Code? Time / hosage?
+- Lectures are at the same time, so really should fill out schedule of what things are doing
+
+--------------------------------------------------
+
+Battle code format
+- 2 teams play against each other
+- AI gets run sequentially on each robot (have different types of robots on each team)
+- Doesn't tell you who wins on client, have to go to command line
+
+Game this year
+- Herd cows into pastures
+- Number of green squares = number of cows
+	- cows are not integers
+	- cows grow over time and then get chased around
+- Goal = put cows into pastures
+	- Can build the pastures
+		- PASTR = Projected Animal Security and Treatment Region
+	- Build towers and then cows get stuck around a tower (the fake way - don't need fences)
+- Winning condition = maximize amount of milk
+	- Milk is collected over time
+	- Don't collect milk when cow arrives, get it over time
+- Pastures can be destroyed by enemy, but don't lose milk
+	- Get a lot of victory points though
+	- So don't want to just create a ton of pastures because enemy can just destroy them and get a ton of points
+
+Installing Battlecode
+- Go to battlecode website and download installer
+- Follow installation documentation
+- READ GAME SPECS AND JAVADOCS
+- Pretty standard AI competitions (thanks Mr. Kaplan)
+
+Now, watch him go through a practice player
+- He recommends Eclipse
+- Go through Package Explorer and then find place where they have battlecode-player
+- Make package for your player  
+- Required to have RobotPlayer.java in the battlecode-player and make class
+	- Your player needs a run function
+		- Takes in the RobotController and all of the default things are built in 
+		- Add an infinite loop in there (b/c robots and want to run the robot a lot)
+			- Holy crap dat robotics experience is great
+	- Don't need main method b/c gets injected into other things (same thing as usual)
+	- Import the good libraries
+	- Need rc.yield(); = end a round
+
+To run a robot
+- Just go to file location where thing is and do "ant run"
+	- dat ant file
+- Then, it will just open pop up
+	- Have queue of maps that will run
+
+Have map editor as a .jar file (have to open it in Windows)
+- Probably will work on Windows b/c of that Eclipse
+- Don't know what map will be b/c they design before competition
+- Right click for line, left click for box
+- Roads go faster and Walls block
+- Soldiers start from HQ
+- Cow Fields generate where cows come from
+	- Make it so that cows don't generate around base
+- Battlecode is deterministic, so have the different seeds
+- Really terrible .jar :P :P
+	- Don't look for dialogs
+- Save it as a .xml
+
+HQ is invulnerable and has high attack
+
+Also have noise tower = will make noise and drive cows around
+
+BYTECODE USED = measure of how much computation is being done
+- made up metric for how much code is being used
+- Amount of bytecode is found in MethodCosts.txt
+- ONLY GET 6000 BYTE CODES IN A ROUND
+	- EVEN IF YOU'RE BELOW THAT, HAVE ACTION DELAY
+		- Have moving, shooting, building / constructing
+		- When you do these computations, have action delay = take longer to do these things
+			- Look at GameConstants in order to see how much you get slowed down
+
+
+rc.spawn(dir) = needs direction to go
+- Direction is own thing, typical Direction.NORTH;
+- Need that try / catch method
+
+If try to do something and not allowed, will be exploded
+
+"If this is elementary for you, it's going to get so complicated, you're going to wish it was this easy"
+F YEAH
+
+if(rc.getType() == Robottype.HQ) {
+	// do this stuff
+	// Basically should really be careful about throwing errors b/c that's going to cost us a ton of bytecodes
+	if(rc.isActive() && rc.canMove(spawnDir) && rc.senseRobotCount()) { 
+		rc.spawn(Direction.NORTH);
+	}
+} else if(rc.getType() == RobotType.SOLDIER) {
+	//Move
+	//Pick a random direction and go
+}
+
+rc.yield(); //KEY!
+
+//Lol they're working on pixel art for the nicer game sprites
+
+// Get robots in certain area
+// Have to do Robot.class because looking for robot in general
+Robot[] enemyRobots = rc.senseNearbyGameObjects(Robot.class, 10000, Team.A); //Looking for certain radius of place 
+if(enemyRobots.length > 0) {
+	RobotInfo anEnemyInfo = senseRobotInfo(enemyRobots[0]);
+	if(anEnemyInfo.location.distanceSquaredto(rc.getLocation()<rc.getType>))
+}
+
+Have messaging system as well! Not group vision!
+Recall that messaging system is what got super hacked in the last few years
+
+Try / catch methods is really what you're not supposed to use - he'll go over what you should do in future lectures
+
+Building towers
+
+Robot limit = pastures count towards robot limit
+
+
+

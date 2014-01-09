@@ -1,0 +1,33 @@
+Pathing algorithims
+- much depth first, very inefficient
+	- maximize one path until end
+- we got breadth first too
+	- maximize each path bit by bit
+		- Note that just found shortest tile distance from place to place might not be fastest, thanks to roads
+- bug navigation
+	- the right wall trick + when get to end of obstacle and am closer to finish, let go of the obstacle
+	- bug pathing is nice b/c only store current position + distance, while the other searches have to store whole maze
+	- If closer to goal than was before followed wall, leaves wall and charges towards it too
+- Add post processing to bugging
+	- After think about going along like that, cut back on the wasteful parts (ex. double backs)
+	- Cut corner if can, and remove double backs
+	- This post-processing applied multiple times can clean it up
+		- Path will keep changing b/c going along paths of shorter or same length
+
+- Simplify the world map to better study
+	- Create a network version for the bot
+	- How to get robot to see network rather than tiles?
+- Think of world map as series of tiles and then get coarser and coarser (2 x 2, 4 x4, etc.)
+
+- Print out bots representation of world
+
+- Know map height and width with robot controller
+
+- Rush vs. camp strategy depending on map size?
+
+- Map plotting by emananting outwards
+	- Nodes via how many things enter and exit
+
+- Coarsen world to make it cleaner
+	- Breadth search 
+

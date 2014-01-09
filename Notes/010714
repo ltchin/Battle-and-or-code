@@ -1,0 +1,51 @@
+TODO:
+- Type up notes
+- Get everyone setup (QQ Windows)
+- Read javadocs
+
+- quantify aggressiveness
+
+--------------------------------------------------
+dat teamwork
+	- swarm behavior
+
+Separating methods
+Making static robot controller
+
+Much modularity wow
+- dem multiple files
+
+Making giant try catch method and then have the inner things throw errors
+
+Can already sense all of the enemy pasture locations via built in functions?
+- Wow maybe we should read the Javadocs a bit...
+
+Develop internal idea of map b/c reading from things cost bytecodes
+
+NOT ALWAYS TRUE THAT IF IT'S NOT LISTED IN THE METHODS COST, THEN IT'S FREE
+- Should get your print statements out
+	- ONLY, don't have prints, but have Indicator Strings which will let us help with debugging
+		- Indicator Strings will be in HUD
+- Reading and writing to array can cost a couple of bytecodes
+
+DUDE THE RANDOM IS SET WITH THE SAME SEED, GG
+- In order for things to behave differently via randomness, have to be careful
+- Dat java.util.Random and the .nextDouble()
+
+IDs are all unique and do the computation order (remember that?)
+
+Communicating
+- Broadcasting = have channel (where in the array) and integer as message
+	- To read or write, have to do know what channel
+	- Can't interfere with other teams
+	- Message stays until gets erased
+
+Guaranteed that maps will not be bigger than 100 x 100 (probably)
+- mmm encode that location via modulo
+
+Be really careful with that editing and using channel and being able to coordinate  with other people
+
+Hmm actually kind of tricky with round to round
+- Having to flip flop in between so still have info
+
+When shooting opponent, get all other robots to come and swarm with you
