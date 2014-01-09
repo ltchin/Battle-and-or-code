@@ -1,0 +1,23 @@
+Going over more pathing algorithims
+- Record list of tiles that have already gone through and don't want to go backwards
+	- Will upload online
+	- ArrayList of MapLocations that previously gone to
+		- If want to avoid self, don't go on self (keeping snail trail small)
+		- Make sure space going is not adjacent to slime trail you're going
+- Use this for local while breadth-first for long distance?
+- coarsening
+	- Don't really need to specify from point to point
+	- Make map coarser by dividing by big map
+		- Factor how many voids in these big squares
+
+- Promise that maps will never have maps (i.e. corridors one wide), so coarsening is ok
+	- Do it with heuristic of where are the voids and where are the euclidean distance
+		- Still can have problems though
+
+Print statements take a long time :P
+
+DON'T SHOOT AT HQ
+
+Rip off cheesy pathing algorithim for now while Eric works
+
+Much other files, very clean
