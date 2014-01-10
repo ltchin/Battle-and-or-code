@@ -92,6 +92,7 @@ public class RobotPlayer{
 						fertileGrounds = mostFertile(cowGrowth, rc);
 					}
 					fertileGround = fertileGrounds[randall.nextInt(fertileGrounds.length)];
+					rc.setIndicatorString(0, "COMPUTED");
 					rc.broadcast(0, locToInt(fertileGround));
 				}else if(rc.getType()==RobotType.SOLDIER){
 					if(!initialized){ //TODO Can this initialize check be eliminated by moving it outside loop?
