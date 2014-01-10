@@ -69,6 +69,13 @@ public class RobotPlayer {
 				//Don't run unless the enemy has pastures built
 					bomber();
 			}
+			else{
+				MapLocation l=new MapLocation(rc.getMapWidth()/2,rc.getMapHeight()/2);
+				moveTo(l);
+				soldiertype=0;
+				bomberstatus=0;
+				rc.yield();
+			}
 		} catch (GameActionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -99,6 +106,7 @@ public class RobotPlayer {
 		}
 		switch(bomberstatus){
 			case 0: //INITIALIZE COHORT DATA
+				rc.setIndicatorString(0,"0");
 				try{
 					cohortinfo = rc.readBroadcast(cohortbstart); 
 					cohort=cohortinfo / 10;
@@ -118,6 +126,7 @@ public class RobotPlayer {
 					System.out.println("bad4");
 				}
 			case 1: //INITIALIZE TARGET DATA
+				rc.setIndicatorString(0,"1");
 				try{
 					System.out.println(""+rc.readBroadcast(pastrlocations));
 					System.out.println(pastrlocations);
@@ -135,10 +144,11 @@ public class RobotPlayer {
 					System.out.println("bad5");
 				}
 			case 2: //GO TO TARGET
+				rc.setIndicatorString(0,"2");
 				try{
 					if(rc.isActive()){
 						if(moveTo(mtarget)){
-							bomberstatus=4;
+							bomberstatus=5;
 							bomber();
 						}
 					}
@@ -149,6 +159,7 @@ public class RobotPlayer {
 				}
 				break;
 			case 3: //SELF-DESTRUCT
+				rc.setIndicatorString(0,"3");
 				int damage=0;
 				for(Robot r:threats){
 					try {
@@ -164,7 +175,7 @@ public class RobotPlayer {
 							rc.selfDestruct();
 						}
 						badsuicide=true;
-						bomberstatus=4;
+						bomberstatus=5;
 						bomber();
 						break;
 					} catch (GameActionException e) {
@@ -175,6 +186,12 @@ public class RobotPlayer {
 				}
 				break;
 			case 4: //PIVOT AROUND TARGET
+				rc.setIndicatorString(0,"4");
+				
+				break;
+				//IF YOU CAN INCREASE THE DISTANCE TO THE CLOSEST ALLY, WHILE STAYING NEXT TO THE ENEMY PASTR, DO SO
+			case 5: //FIRE AT TARGET
+				rc.setIndicatorString(0,"5");
 				badsuicide=false;
 				if (threats.length > 0) {
 					try{
@@ -183,14 +200,14 @@ public class RobotPlayer {
 							RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
 							rc.attackSquare(robotInfo.location);
 						}
+						else{
+							bomberstatus=0;
+						}
 					}
 					catch(GameActionException e){
 						
 					}
 				}
-				break;
-				//IF YOU CAN INCREASE THE DISTANCE TO THE CLOSEST ALLY, WHILE STAYING NEXT TO THE ENEMY PASTR, DO SO
-			case 5: //FIRE AT TARGET
 				//IF YOU CAN'T GET AWAY FROM YOUR ALLIES, FIRE AT AN ENEMY
 				break;
 		}
