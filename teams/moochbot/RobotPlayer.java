@@ -1,6 +1,8 @@
 package moochbot;
 
+import java.util.ArrayList;
 import java.util.Random;
+import moochbot.pathfinding.*;
 
 import battlecode.common.*;
 
@@ -11,7 +13,7 @@ import battlecode.common.*;
  */
 
 public class RobotPlayer {
-	static final int CLOSE_ENOUGH = 3;
+	static final int CLOSE_ENOUGH = 2;
 
 	static Random rand;
 	static RobotController rc; 
@@ -21,12 +23,22 @@ public class RobotPlayer {
 
 	static MapLocation[] enemyPastrs = {};
 	static int enemyPastrsIndex = 0;
+	static int bigBoxSize = 5;
 
 	static MapLocation targetPastr;
+	static ArrayList<MapLocation> path = new ArrayList<MapLocation>();
+
+	static Direction allDirections[] = Direction.values();
+	static int directionalLooks[] = new int[]{0,1,-1,2,-2,3,-3,4};
 
 	public static void run(RobotController roboCont) {
 		rc = roboCont;		
 		rand = new Random(rc.getRobot().getID());
+
+		if(rc.getType() == RobotType.SOLDIER) {
+			BreadthFirst.init(rc, bigBoxSize);
+		}
+		
 		while(true) {
 			try{
 				switch(rc.getType()) {
@@ -34,7 +46,12 @@ public class RobotPlayer {
 					runHQ();
 					break;
 				case SOLDIER:
+					rc.setIndicatorString(1, "" + soldierStatus);
 					runSoldier();
+					break;
+				case PASTR:
+					break;
+				case NOISETOWER:
 					break;
 				default:
 					System.out.println("Shouldn't be happening");
@@ -62,22 +79,19 @@ public class RobotPlayer {
 	 * Temporarily using modified Monte Carlo pathing
 	 */
 	public static boolean moveTo(MapLocation dest) throws GameActionException {
-		MapLocation myLoc = rc.getLocation();
-
+		if(path.size()==0){
+			path = BreadthFirst.pathTo(VectorFunctions.mldivide(rc.getLocation(),bigBoxSize), VectorFunctions.mldivide(dest, bigBoxSize), 100000);
+		}
+		//follow breadthFirst path
+		if(path.size() > 0) {
+			Direction bdir = BreadthFirst.getNextDirection(path, bigBoxSize);
+			BasicPathing.tryToMove(bdir, true, rc, directionalLooks, allDirections);
+		} else { 
+			BasicPathing.tryToMove(rc.getLocation().directionTo(dest), true, rc, directionalLooks, allDirections);
+		}
+		
 		//If close enough, return true;
-		if(myLoc.distanceSquaredTo(dest) <= CLOSE_ENOUGH) {
-			return true;
-		}
-
-		// Else, keep moving
-		Direction moveDirection = rc.getLocation().directionTo(dest);
-
-		while(!rc.canMove(moveDirection)) {
-			moveDirection = directions[rand.nextInt(8)];			
-		}
-		rc.move(moveDirection);
-
-		return false;
+		return rc.getLocation().isAdjacentTo(dest) ;
 	}
 
 	/*
@@ -124,8 +138,10 @@ public class RobotPlayer {
 					targetPastr = enemyPastrs[enemyPastrsIndex];
 					enemyPastrsIndex++;
 					soldierStatus = SoldierStatus.MOVETOPASTR;
+
+					path = BreadthFirst.pathTo(VectorFunctions.mldivide(rc.getLocation(),bigBoxSize), VectorFunctions.mldivide(targetPastr,bigBoxSize), 100000);
 				}
-				break;
+				break;			
 			case MOVETOPASTR:
 				if(moveTo(targetPastr)) {
 					soldierStatus = SoldierStatus.PASTRFOUND;
@@ -145,11 +161,15 @@ public class RobotPlayer {
 								soldierStatus = SoldierStatus.DEFENSE;
 							}												
 						} else {
-							rc.construct(RobotType.PASTR);
+							if(rc.isActive()) {
+								rc.construct(RobotType.PASTR);
+							}
 						}
 					}
 				} else {
-					rc.attackSquare(targetPastr);
+					if(rc.isActive()) {
+						rc.attackSquare(targetPastr);
+					}
 				}				
 				break;
 			case DEFENSE: //Currently set as perma defense mode
