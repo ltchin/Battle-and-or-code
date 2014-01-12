@@ -11,7 +11,10 @@ package team035_jrowan;
 import battlecode.common.*;
 import battlecode.engine.instrumenter.lang.System;
 import battlecode.world.Util;
-import jayrow.Job;
+import team035_jrowan.Job;
+import team035_jrowan.Collection;
+import team035_jrowan.Defense;
+import team035_jrowan.Offense;
 
 import java.util.*;
 
@@ -36,42 +39,9 @@ public class RobotPlayer{
 	static int myID;
 	static boolean fGComputed; //tells whether the soldier has computed fertileGrounds yet so he does it at most once
 	static MapLocation[] PASTRs;
-	static int defenderChannel = 10;
 	static boolean inPosition = false;
 	static int lastID = 0;
-	
-	public static MapLocation[] mostFertile(double[][] map, RobotController rc){ //builds an array containing all locations with maximal cow birthrate
-		int maxX = 0; //definitely could be optimized 
-		int maxY = 0; //currently, it finds the highest birthrate, counts number with that birthrate
-		for(int i=0; i<map.length; i++){ //then puts all locations with that birthrate in an array
-			for(int j=0; j<map[0].length; j++){
-				if(map[i][j]>map[maxX][maxY]){
-					maxX = i;
-					maxY = j;
-				}
-			}
-		}
-		double maxRate = map[maxX][maxY];
-		/*for(int i=0; i<cowGrowth.length; i++){
-			for(int j=0; j<cowGrowth[0].length; j++){
-				if(map[i][j]==maxRate){
-					numOptimal++;
-				}
-			}
-		}*/
-		int counter = 0;
-		ArrayList<MapLocation> answer = new ArrayList<MapLocation>(100);
-		MapLocation[] caster = {new MapLocation(maxX, maxY)};
-		for(int i=0; i<rc.getMapWidth(); i++){
-			for(int j=0; j<rc.getMapHeight(); j++){
-				if(map[i][j]==maxRate){
-					answer.add(counter, new MapLocation(i,j));
-					counter++;
-				}
-			}
-		}
-		return (MapLocation[]) answer.toArray(caster);
-	}	
+		
 	public static void run(RobotController rcin){
 		rc = rcin;
 		myID = rc.getRobot().getID();
@@ -94,20 +64,20 @@ public class RobotPlayer{
 					runHeadquarters();
 					if(!fGComputed){
 						cowGrowth = rc.senseCowGrowth();
-						fertileGrounds = mostFertile(cowGrowth, rc);
+						fertileGrounds = Collection.mostFertile(cowGrowth, rc);
 					}
 					fertileGround = fertileGrounds[randall.nextInt(fertileGrounds.length)];
 					rc.setIndicatorString(0, "COMPUTED");
-					rc.broadcast(0, locToInt(fertileGround));
+					rc.broadcast(0, MapFunctions.locToInt(fertileGround));
 					rc.broadcast(1, counter%10); //we spend a lot on this computation i think
-					if(1 == 1){ //every 40 turns, reset the PASTRs array and broadcast a new place to defend
+					if(1 == 1){ //TODO fix this find-a-new-place-to-defend code
 						PASTRs = rc.sensePastrLocations(rc.getTeam());
 						if(PASTRs.length>0){
 							MapLocation defendSpot = PASTRs[randall.nextInt(PASTRs.length)];  
-							rc.broadcast(defenderChannel, locToInt(defendSpot));
+							rc.broadcast(Defense.defenderChannel, MapFunctions.locToInt(defendSpot));
 						}
 						else{
-							rc.broadcast(defenderChannel, locToInt(fertileGround));
+							rc.broadcast(Defense.defenderChannel, MapFunctions.locToInt(fertileGround));
 						}
 					}
 					if(rc.readBroadcast(999)!=lastID)
@@ -115,11 +85,17 @@ public class RobotPlayer{
 						lastID = rc.readBroadcast(999);
 						counter++;
 					}
+					Offense.runHQOffense(rc);
 				}else if(rc.getType()==RobotType.SOLDIER){
 					if(myJob == Job.UNASSIGNED){
 						if(rc.readBroadcast(1)==0)
 						{
 							myJob = Job.PASTRBUILDER;
+						}
+						else if(rc.readBroadcast(1)>6)
+						{
+							rc.setIndicatorString(1, "BECOMING OFFENSE");
+							myJob = Job.OFFENSE;
 						}
 						else {
 							rc.setIndicatorString(1,"BECOMING DEFENSE");
@@ -129,27 +105,18 @@ public class RobotPlayer{
 					}
 					switch(myJob) {
 					case PASTRBUILDER:{
-						if(!initialized){ //TODO Can this initialize check be eliminated by moving it outside loop?
-							cowGrowth = rc.senseCowGrowth();
-							int orders = rc.readBroadcast(0);
-							if(orders!=0){
-								fertileGround = intToLoc(orders);
-							}
-							else {
-								fertileGrounds = mostFertile(cowGrowth, rc);
-								fGComputed = true;
-								fertileGround = fertileGrounds[randall.nextInt(fertileGrounds.length)];
-							}						
-						}
-						initialized = true;
-						runPASTRBuilder();
+						//initialization has been moved inside Collection
+						Collection.runPASTRBuilder(rc, randall, rc.getLocation());
 						}
 					case NOISEBUILDER:{
 						runNoiseBuilder();
 					}
 					case DEFENDER:{ //if assigned to defense, go to a pasture and attack nearby enemies
 						rc.setIndicatorString(0, "DEFENDER");
-						runDefender();
+						Defense.runDefender(rc, randall, rc.getLocation());
+					}
+					case OFFENSE:{
+						Offense.runSoldier(rc, randall);
 					}
 					}
 					
@@ -166,19 +133,7 @@ public class RobotPlayer{
 	
 	
 	
-	//is this spot non-overlapping?	
-	private static boolean goodSpot(RobotController rc, MapLocation myLoc) throws GameActionException { 	
-		//sense nearby robots on our team
-		Robot[] nearby = rc.senseNearbyGameObjects(Robot.class, myLoc, 16, rc.getTeam());
-		//check to see if those are PASTRs or constructing PASTRs
-		for(Robot obj : nearby) {
-			RobotInfo objInfo = rc.senseRobotInfo(obj);
-			if(objInfo.isConstructing||objInfo.type == RobotType.PASTR){
-				return false;
-			}
-		}
-		return true;
-	}
+
 
 	private static void runNoiseBuilder() throws GameActionException {
 		MapLocation PASTRToHelp;
@@ -201,109 +156,7 @@ public class RobotPlayer{
 			}
 	}
 	
-	private static boolean nearPastr(MapLocation myLoc, MapLocation[] searchArray, int radius) throws GameActionException{
-		for(MapLocation possible : searchArray){
-			if(myLoc.distanceSquaredTo(possible) < radius){ //checks if you're close to any site in the searchArray
-				return true;
-			}
-		}
-		return false;
-	}
-	
-	
-	
-	private static boolean near(MapLocation myLoc, MapLocation target, int radius) throws GameActionException{
-		if(myLoc.distanceSquaredTo(target)<radius){
-			return true;
-		}
-		return false;
-	}
-	
-	private static void runDefender() throws GameActionException { //primitive defender code
-		myLoc = rc.getLocation();
-		MapLocation target = intToLoc(rc.readBroadcast(defenderChannel));
-		rc.setIndicatorString(2,""+locToInt(target));
-		//int turnNum = Clock.getRoundNum();
-		/*if(turnNum % 30 == 0) //reupdate the PASTR locations only once in a while
-		{
-			PASTRs = rc.sensePastrLocations(rc.getTeam());
-		}*/
-		if(near(myLoc, target, 16))
-		{
-			Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,10,rc.getTeam().opponent());
-			if (nearbyEnemies.length > 0) {
-				RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
-				rc.attackSquare(robotInfo.location);
-			}
-			Robot[] nearbys = rc.senseNearbyGameObjects(Robot.class);
-			for(Robot r:nearbys)
-			{
-				RobotInfo robotInfo = rc.senseRobotInfo(r);
-				if(robotInfo.type==RobotType.PASTR){
-					inPosition = true;
-				}
-				else{
-					inPosition = false;
-				}
-			}
-		}
-		else if(!inPosition){
-			Direction moveDirection = myLoc.directionTo(target);
-			if(rc.isActive()&&rc.canMove(moveDirection)){
-				rc.move(moveDirection);
-				
-			}
-			else if(rc.isActive()){
-				moveDirection = allDirections[randall.nextInt(8)];
-				if(rc.canMove(moveDirection)&&rc.isActive()){
-					rc.move(moveDirection);
-				}
-			}
 
-		}
-	}
-	
-	private static void runPASTRBuilder() throws GameActionException {
-			myLoc = rc.getLocation();
-			MapLocation[] friendlyPASTRs = rc.sensePastrLocations(rc.getTeam());
-			for(MapLocation past : friendlyPASTRs){
-				if(fertileGround.distanceSquaredTo(past) < 16){
-					if(!fGComputed){
-						cowGrowth = rc.senseCowGrowth();
-						fertileGrounds = mostFertile(cowGrowth, rc);
-						fGComputed = true;
-					}
-					fertileGround = fertileGrounds[randall.nextInt(fertileGrounds.length)];
-				}
-			}
-			if(myLoc.equals(fertileGround)&&rc.isActive()){ //if we can and there isn't another PASTR 
-				//or PASTR construction nearby, build a PASTR
-				if(goodSpot(rc, myLoc)){
-					rc.construct(RobotType.PASTR); 
-				}
-				else{ //otherwise, go find a new spot
-					if(!fGComputed){
-						cowGrowth = rc.senseCowGrowth();
-						fertileGrounds = mostFertile(cowGrowth, rc);
-						fGComputed = true;
-					}
-					fertileGround = fertileGrounds[randall.nextInt(fertileGrounds.length)];
-				}
-			}
-			else{
-				Direction moveDirection = myLoc.directionTo(fertileGround);
-				if(rc.isActive()&&rc.canMove(moveDirection)){
-					rc.move(moveDirection);
-				}
-				else if(rc.isActive()){
-					moveDirection = allDirections[randall.nextInt(8)];
-					if(rc.canMove(moveDirection)&&rc.isActive()){
-						rc.move(moveDirection);
-					}
-				}
-			}
-	}
-	
 	private static void swarmMove(MapLocation averagePositionOfSwarm) throws GameActionException{
 		Direction chosenDirection = rc.getLocation().directionTo(averagePositionOfSwarm);
 		if(rc.isActive()){
@@ -323,22 +176,6 @@ public class RobotPlayer{
 				}
 			}
 		}
-	}
-	
-	private static MapLocation mladd(MapLocation m1, MapLocation m2){
-		return new MapLocation(m1.x+m2.x,m1.y+m2.y);
-	}
-	
-	private static MapLocation mldivide(MapLocation bigM, int divisor){
-		return new MapLocation(bigM.x/divisor, bigM.y/divisor);
-	}
-
-	private static int locToInt(MapLocation m){
-		return (m.x*100 + m.y);
-	}
-	
-	private static MapLocation intToLoc(int i){
-		return new MapLocation(i/100,i%100);
 	}
 	
 	private static void tryToShoot() throws GameActionException {
