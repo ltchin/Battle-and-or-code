@@ -1,5 +1,0 @@
-package team035_jrowan;
-
-public enum Job {
-	PASTRBUILDER, NOISEBUILDER, SHEEPDOG, DEFENDER, UNASSIGNED
-}
