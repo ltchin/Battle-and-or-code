@@ -33,7 +33,7 @@ public class Defense{
 		if(near(myLoc, target, 16))
 		{
 			Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,10,rc.getTeam().opponent());
-			if (nearbyEnemies.length > 0) {
+			if (nearbyEnemies.length > 0 &&rc.isActive()) {
 				RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
 				rc.attackSquare(robotInfo.location);
 			}

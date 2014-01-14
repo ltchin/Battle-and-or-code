@@ -3,11 +3,6 @@ package team035_jrowan;
 import java.util.*;
 
 import battlecode.common.*;
-import battlecode.engine.instrumenter.lang.System;
-import battlecode.world.Util;
-import team035_jrowan.Job;
-import team035_jrowan.Collection;
-import team035_jrowan.Defense;
 
 public class Offense{
 	static int cohortbstart=0; //where the range of channels for bomberbots begins
@@ -90,7 +85,7 @@ public class Offense{
 	}
 	public static void bomber(RobotController rc, Random rand) {
 		Robot[] threats=rc.senseNearbyGameObjects(Robot.class,10);
-		if(badSuicide=true){
+		if(!badSuicide){
 			int numthreats=0;
 			for(Robot r:threats){
 				RobotInfo rinfo=null;
@@ -101,10 +96,12 @@ public class Offense{
 					e.printStackTrace();
 					//System.out.println("bad3");
 				}
-				if(rinfo.type==RobotType.SOLDIER&&rinfo.actionDelay<1&&rinfo.team==rc.getTeam().opponent()){
+				if(rinfo.type==RobotType.SOLDIER&&rinfo.team==rc.getTeam().opponent()&&rinfo.actionDelay<=2){
 					numthreats++;
 				}
-				
+				if(numthreats!=0){
+					System.out.println(""+numthreats);
+				}
 			}
 			if(numthreats*10>=rc.getHealth()){
 				bomberStatus=3;
@@ -139,7 +136,6 @@ public class Offense{
 					target=rc.readBroadcast(pastrlocations+1+rand.nextInt(rc.readBroadcast(pastrlocations)));
 					mtarget=new MapLocation(target/100,target%100);
 					rc.broadcast(cohortbstart+cohort+1,target);
-					mtarget=new MapLocation(target/100,target%100);
 					bomberStatus=2;
 					//System.out.println(target);
 					bomber(rc, rand);
@@ -167,28 +163,31 @@ public class Offense{
 			case 3: //SELF-DESTRUCT
 				rc.setIndicatorString(0,"3");
 				int damage=0;
-				for(Robot r:threats){
-					try {
+				try {
+					for(Robot r:threats){
 						RobotInfo threat=rc.senseRobotInfo(r);
-						if(threat.location.distanceSquaredTo(rc.getLocation())<=2){
+						int howfar=threat.location.distanceSquaredTo(rc.getLocation());
+						if(howfar<=2){
 							if(threat.team==rc.getTeam()){
 								damage++;
 							} else{
 								damage--;
 							}
 						}
-						if(damage<0){
-							rc.selfDestruct();
-						}
-						badSuicide=true;
-						bomberStatus=5;
-						bomber(rc, rand);
-						break;
-					} catch (GameActionException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						//System.out.println("bad7");
 					}
+					rc.setIndicatorString(2,""+damage);
+					if(damage<0){
+						rc.selfDestruct();
+					}
+					badSuicide=true;
+					bomberStatus=5;
+					bomber(rc, rand);
+					break;
+				} catch (GameActionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					//System.out.println("bad7");
+					
 				}
 				break;
 			case 4: //PIVOT AROUND TARGET

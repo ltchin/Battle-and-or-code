@@ -9,8 +9,6 @@ package team035_jrowan;
 
 //main changes: 
 import battlecode.common.*;
-import battlecode.engine.instrumenter.lang.System;
-import battlecode.world.Util;
 import team035_jrowan.Job;
 import team035_jrowan.Collection;
 import team035_jrowan.Defense;
@@ -70,7 +68,7 @@ public class RobotPlayer{
 					rc.setIndicatorString(0, "COMPUTED");
 					rc.broadcast(0, MapFunctions.locToInt(fertileGround));
 					rc.broadcast(1, counter%10); //we spend a lot on this computation i think
-					if(1 == 1){ //TODO fix this find-a-new-place-to-defend code
+					if(true){ //TODO fix this find-a-new-place-to-defend code
 						PASTRs = rc.sensePastrLocations(rc.getTeam());
 						if(PASTRs.length>0){
 							MapLocation defendSpot = PASTRs[randall.nextInt(PASTRs.length)];  
@@ -104,20 +102,20 @@ public class RobotPlayer{
 						}
 					}
 					switch(myJob) {
-					case PASTRBUILDER:{
+					case PASTRBUILDER:
 						//initialization has been moved inside Collection
 						Collection.runPASTRBuilder(rc, randall, rc.getLocation());
-						}
-					case NOISEBUILDER:{
-						runNoiseBuilder();
-					}
-					case DEFENDER:{ //if assigned to defense, go to a pasture and attack nearby enemies
+						break;
+					case NOISEBUILDER:
+						//runNoiseBuilder();
+						break;
+					case DEFENDER: //if assigned to defense, go to a pasture and attack nearby enemies
 						rc.setIndicatorString(0, "DEFENDER");
 						Defense.runDefender(rc, randall, rc.getLocation());
-					}
-					case OFFENSE:{
+						break;
+					case OFFENSE:
 						Offense.runSoldier(rc, randall);
-					}
+						break;
 					}
 					
 				}
@@ -135,7 +133,7 @@ public class RobotPlayer{
 	
 
 
-	private static void runNoiseBuilder() throws GameActionException {
+	/*private static void runNoiseBuilder() throws GameActionException {
 		MapLocation PASTRToHelp;
 		PASTRToHelp = rc.sensePastrLocations(rc.getTeam())[0];
 		if(myLoc.distanceSquaredTo(PASTRToHelp)<16 && rc.isActive())
@@ -154,7 +152,7 @@ public class RobotPlayer{
 				}
 			}
 			}
-	}
+	}*/
 	
 
 	private static void swarmMove(MapLocation averagePositionOfSwarm) throws GameActionException{
