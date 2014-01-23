@@ -46,6 +46,8 @@ public class RobotPlayer{
 	static MapLocation rallyPoint;
 	static int PASTRChannel = 6200;	
 	static MapLocation[] targetPath;
+	static int jobChannel = 1;
+	static int PASTRHelpChannel = 75;
 	//tell all robots to attack instead of center-worshipping
 	
 	public static void run(RobotController rcin) throws GameActionException{
@@ -54,15 +56,13 @@ public class RobotPlayer{
 		randall.setSeed(myID);
 		initialized = false;
 		fGComputed = false;
-		if(rc.readBroadcast(1)%2==0){
-			myJob = Job.PASTRBUILDER;
-		}
-		else{
-			myJob = Job.NOISEBUILDER;
-		}
+		myJob = Job.UNASSIGNED;
 		myLoc = rc.getLocation();
 		Direction toEnemyHQ = rc.getLocation().directionTo(rc.senseEnemyHQLocation());
 		if(rc.getType() == RobotType.HQ){
+			cowGrowth = rc.senseCowGrowth();
+			fertileGrounds = Collection.mostFertile(cowGrowth, rc);
+			fertileGround = fertileGrounds[0]; //randall.nextInt()%fertileGrounds.length
 			rc.spawn(toEnemyHQ);
 		}
 		try{
@@ -72,62 +72,63 @@ public class RobotPlayer{
 			e.printStackTrace();
 		}
 		int counter = 0;
-		if(rc.getType()==RobotType.HQ){
+		/*if(rc.getType()==RobotType.HQ){
 			BreadthFirst.init(rc, 1);
-		}
-		else{
+		}*/
+		/*else{
 			if(myJob == Job.NOISEBUILDER){
 				Offense.moveTo(rcin, randall, new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
 			}
 			else{
 				Offense.moveTo(rcin, randall, new MapLocation(rc.getMapWidth()/2+1, rc.getMapHeight()/2));
 			}
-		}
+		}*/
 		targetPath = NoiseTower.buildTargets(rc);
 		while(true){
 			try{
 				if(rc.getType()==RobotType.HQ){//if I'm a headquarters, do the computation of where the next bot should build
 					NoiseTower.runHQNoiseTower(rc);
 					if(Clock.getRoundNum()>20){
-						rc.broadcast(1, 1);
+						rc.broadcast(jobChannel, 1);
 					}
 					else{
-						rc.broadcast(1, 0);
+						rc.broadcast(jobChannel, 0);
 					}
-					/*rc.readBroadcast(PASTRChannel);
+					rc.readBroadcast(PASTRChannel);
 					initialized = true;
 					runHeadquarters();
 					if(!fGComputed){
-						cowGrowth = rc.senseCowGrowth();
-						fertileGrounds = Collection.mostFertile(cowGrowth, rc);
 					}
-					fertileGround = fertileGrounds[randall.nextInt(fertileGrounds.length)];
+					//fertileGround = fertileGrounds[randall.nextInt(fertileGrounds.length)];
 					rc.setIndicatorString(0, "COMPUTED");
 					rc.broadcast(0, MapFunctions.locToInt(fertileGround));
-					rc.broadcast(1, counter%10); //we spend a lot on this computation i think
-					if(1 == 1){ //TODO fix this find-a-new-place-to-defend code
-						PASTRs = rc.sensePastrLocations(rc.getTeam());
-						if(PASTRs.length>0){
-							MapLocation defendSpot = PASTRs[randall.nextInt(PASTRs.length)];  
-							rc.broadcast(Defense.defenderChannel, MapFunctions.locToInt(defendSpot));
-						}
-						else{
-							rc.broadcast(Defense.defenderChannel, MapFunctions.locToInt(fertileGround));
-						}
+					rc.broadcast(jobChannel, counter); //we spend a lot on this computation i think
+					//TODO fix this find-a-new-place-to-defend code
+					PASTRs = rc.sensePastrLocations(rc.getTeam());
+					if(PASTRs.length>0){
+						MapLocation defendSpot = PASTRs[randall.nextInt(PASTRs.length)];  
+						rc.broadcast(Defense.defenderChannel, MapFunctions.locToInt(defendSpot));
+					}
+					else{
+						rc.broadcast(Defense.defenderChannel, MapFunctions.locToInt(fertileGround));
 					}
 					if(rc.readBroadcast(999)!=lastID)
 					{
 						lastID = rc.readBroadcast(999);
 						counter++;
 					}
-					Offense.runHQOffense(rc);*/
+					Offense.runHQOffense(rc);
 				}else if(rc.getType()==RobotType.SOLDIER){
 					if(myJob == Job.UNASSIGNED){
-						if(rc.readBroadcast(1)==0)
+						int assignment = rc.readBroadcast(jobChannel);
+						if(assignment==0)
 						{
 							myJob = Job.PASTRBUILDER;
 						}
-						else if(rc.readBroadcast(1)>6)
+						else if(assignment==1){
+							myJob = Job.NOISEBUILDER;
+						}
+						else if(assignment>6)
 						{
 							rc.setIndicatorString(1, "BECOMING OFFENSE");
 							myJob = Job.OFFENSE;
@@ -142,15 +143,15 @@ public class RobotPlayer{
 					case PASTRBUILDER:{
 						//initialization has been moved inside Collection
 						//Collection.runPASTRBuilder(rc, randall, rc.getLocation());
-						Offense.moveTo(rcin, randall, new MapLocation(rc.getMapWidth()/2+1, rc.getMapHeight()/2));
+						Offense.moveTo(rcin, randall, MapFunctions.intToLoc(rc.readBroadcast(0)));
 						if(Clock.getRoundNum() > 100&&rc.isActive()){
 							rc.construct(RobotType.PASTR);
 						}
 						break;
 						}
 					case NOISEBUILDER:{
-						Offense.moveTo(rcin, randall, new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
-						if(rc.isActive()&&Clock.getRoundNum()>50){
+						Offense.moveTo(rcin, randall, MapFunctions.intToLoc(rc.readBroadcast(0)));
+						if(rc.isActive()&&Defense.near(rc.getLocation(), MapFunctions.intToLoc(rc.readBroadcast(0)),9)){
 							rc.construct(RobotType.NOISETOWER);
 						}
 						break;
@@ -169,6 +170,13 @@ public class RobotPlayer{
 				}
 				else if(rc.getType()==RobotType.NOISETOWER){
 					NoiseTower.runNoiseTower(rc, targetPath);
+				}
+				else if(rc.getType()==RobotType.PASTR){
+					Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,10,rc.getTeam().opponent());
+					if (nearbyEnemies.length > 0 && rc.isActive()) {
+						RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
+						rc.broadcast(PASTRHelpChannel, MapFunctions.locToInt(robotInfo.location));
+					}
 				}
 				rc.yield();
 			}catch (Exception e){

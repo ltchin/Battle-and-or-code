@@ -26,6 +26,7 @@ public class Collection {
 	static MapLocation myloc;
 	static boolean initialized;
 	
+	
 	public static MapLocation[] mostFertile(double[][] map, RobotController rc){ //builds an array containing all locations with maximal cow birthrate
 		int maxX = 0; //definitely could be optimized 
 		int maxY = 0; //currently, it finds the highest birthrate, counts number with that birthrate

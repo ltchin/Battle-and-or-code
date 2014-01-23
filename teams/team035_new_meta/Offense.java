@@ -22,6 +22,8 @@ public class Offense{
 	static int soldierType=0;
 	static int bomberStatus=0;
 	static boolean badSuicide;
+	static int directionalLooks[] = new int[]{0,1,-1,2,-2};
+	static Direction allDirections[] = Direction.values();
 
 	public static boolean moveTo(RobotController rc, Random rand, MapLocation dest) throws GameActionException {
 		MapLocation myLoc = rc.getLocation();
@@ -34,7 +36,8 @@ public class Offense{
 
         // Else, keep moving
         Direction moveDirection = rc.getLocation().directionTo(dest);
-
+        BasicPathing.tryToMove(moveDirection, true, rc, directionalLooks, allDirections);
+        /*//this stuff is true
         while(!rc.canMove(moveDirection)) {
         	moveDirection = directions[rand.nextInt(8)];                        
         }
@@ -48,7 +51,7 @@ public class Offense{
 			e.printStackTrace();
 			//System.out.println("bad8");
 		}
-
+		*/
          return false;
      }
 	public static void runHQOffense(RobotController rc) throws GameActionException{
@@ -91,7 +94,7 @@ public class Offense{
 	}
 	public static void bomber(RobotController rc, Random rand) {
 		Robot[] threats=rc.senseNearbyGameObjects(Robot.class,10);
-		if(badSuicide=true){
+		if(!badSuicide){
 			int numthreats=0;
 			for(Robot r:threats){
 				RobotInfo rinfo=null;
@@ -102,10 +105,12 @@ public class Offense{
 					e.printStackTrace();
 					//System.out.println("bad3");
 				}
-				if(rinfo.type==RobotType.SOLDIER&&rinfo.actionDelay<1&&rinfo.team==rc.getTeam().opponent()){
+				if(rinfo.type==RobotType.SOLDIER&&rinfo.team==rc.getTeam().opponent()&&rinfo.actionDelay<=2){
 					numthreats++;
 				}
-				
+				if(numthreats!=0){
+					//System.out.println(""+numthreats);
+				}
 			}
 			if(numthreats*10>=rc.getHealth()){
 				bomberStatus=3;
@@ -140,7 +145,6 @@ public class Offense{
 					target=rc.readBroadcast(pastrlocations+1+rand.nextInt(rc.readBroadcast(pastrlocations)));
 					mtarget=new MapLocation(target/100,target%100);
 					rc.broadcast(cohortbstart+cohort+1,target);
-					mtarget=new MapLocation(target/100,target%100);
 					bomberStatus=2;
 					//System.out.println(target);
 					bomber(rc, rand);
@@ -168,28 +172,31 @@ public class Offense{
 			case 3: //SELF-DESTRUCT
 				rc.setIndicatorString(0,"3");
 				int damage=0;
-				for(Robot r:threats){
-					try {
+				try {
+					for(Robot r:threats){
 						RobotInfo threat=rc.senseRobotInfo(r);
-						if(threat.location.distanceSquaredTo(rc.getLocation())<=2){
+						int howfar=threat.location.distanceSquaredTo(rc.getLocation());
+						if(howfar<=2){
 							if(threat.team==rc.getTeam()){
 								damage++;
 							} else{
 								damage--;
 							}
 						}
-						if(damage<0){
-							rc.selfDestruct();
-						}
-						badSuicide=true;
-						bomberStatus=5;
-						bomber(rc, rand);
-						break;
-					} catch (GameActionException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-						//System.out.println("bad7");
 					}
+					rc.setIndicatorString(2,""+damage);
+					if(damage<0){
+						rc.selfDestruct();
+					}
+					badSuicide=true;
+					bomberStatus=5;
+					bomber(rc, rand);
+					break;
+				} catch (GameActionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					//System.out.println("bad7");
+					
 				}
 				break;
 			case 4: //PIVOT AROUND TARGET
@@ -203,12 +210,33 @@ public class Offense{
 				if (threats.length > 0) {
 					try{
 						Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,10,rc.getTeam().opponent());
-						if (nearbyEnemies.length > 0) {
+						MapLocation target = new MapLocation(-1, -1); //the target square; -1, -1 if no good target
+						/*if (nearbyEnemies.length > 0) {
 							RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
 							rc.attackSquare(robotInfo.location);
+						}*/ //this code works; seeking to optimize now
+						//new plan; if you seee a PASTR, choose that to attack regardless (this might be bad micro)
+						//if you see an enemy constructing something, don't kill it yet (save 
+						for (Robot enemy:nearbyEnemies){
+							RobotInfo enemyInfo = rc.senseRobotInfo(enemy);
+							if (enemyInfo.type == RobotType.PASTR){
+								target = enemyInfo.location;
+								break;
+							}
+							else if(enemyInfo.isConstructing){
+							}
+							else{
+								target = enemyInfo.location;
+							}
+						}
+						/*else{
+							bomberStatus=0;
+						}*/
+						if(target.x == -1){
+							bomberStatus = 0;
 						}
 						else{
-							bomberStatus=0;
+							rc.attackSquare(target);
 						}
 					}
 					catch(GameActionException e){
