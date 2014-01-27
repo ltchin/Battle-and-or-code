@@ -10,7 +10,11 @@ import battlecode.common.RobotController;
 import battlecode.common.RobotInfo;
 import battlecode.common.RobotType;
 
+import team035.Job;
+import team035.Defense;
+import team035.Offense;
 import team035.MapFunctions;
+import team035.BasicPathing;
 //Collection class contains methods for determining where to build PASTRs and for running PASTR-constructors
 
 public class Collection {
@@ -22,6 +26,7 @@ public class Collection {
 	static double[][] cowGrowth;
 	static MapLocation myloc;
 	static boolean initialized;
+	
 	
 	public static MapLocation[] mostFertile(double[][] map, RobotController rc){ //builds an array containing all locations with maximal cow birthrate
 		int maxX = 0; //definitely could be optimized 
@@ -53,13 +58,27 @@ public class Collection {
 				}
 			}
 		}
-		return (MapLocation[]) answer.toArray(caster);
+		counter = 0;
+		ArrayList<MapLocation> closeAnswer = new ArrayList<MapLocation>(100);
+		int minDistance = 999999;
+		MapLocation[] fertileArray = (MapLocation[]) answer.toArray(caster);
+		for(MapLocation spot:fertileArray){
+			if(spot.distanceSquaredTo(rc.senseHQLocation())<minDistance){
+				minDistance = spot.distanceSquaredTo(rc.senseHQLocation());
+			}
+		}
+		for(MapLocation spot:fertileArray){
+			if(spot.distanceSquaredTo(rc.senseHQLocation())==minDistance){
+				closeAnswer.add(counter, spot);
+			}
+		}
+		return (MapLocation[]) closeAnswer.toArray(caster);
 	}
 	
 	//is this spot non-overlapping?	
 	private static boolean goodSpot(RobotController rc, MapLocation myLoc) throws GameActionException { 	
 		//sense nearby robots on our team
-		Robot[] nearby = rc.senseNearbyGameObjects(Robot.class, myLoc, 16, rc.getTeam());
+		Robot[] nearby = rc.senseNearbyGameObjects(Robot.class, myLoc, 16, rc.getTeam()); //once 16, lowered to account for trolly walls
 		//check to see if those are PASTRs or constructing PASTRs
 		for(Robot obj : nearby) {
 			RobotInfo objInfo = rc.senseRobotInfo(obj);
