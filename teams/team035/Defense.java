@@ -22,6 +22,7 @@ public class Defense{
 	static int PASTRHelpChannel = 75; //for PASTRs to ask for help
 	static int directionalLooks[] = new int[]{0,1,-1,2,-2};
 	static int ATTACKCHANNEL = 42;
+	static boolean helping;
 
 	public static boolean near(MapLocation myLoc, MapLocation target, int radius) throws GameActionException{
 		if(myLoc.distanceSquaredTo(target)<radius){
@@ -32,8 +33,13 @@ public class Defense{
 	
 	public static void runDefender(RobotController rc, Random randall, MapLocation myLoc) throws GameActionException { //primitive defender code
 		MapLocation target = MapFunctions.intToLoc(rc.readBroadcast(defenderChannel));
+		rc.setIndicatorString(1, ""+rc.readBroadcast(PASTRHelpChannel));
 		if(rc.readBroadcast(PASTRHelpChannel)!=0){ //if a PASTR is calling for help
 			target = MapFunctions.intToLoc(rc.readBroadcast(PASTRHelpChannel));
+			helping = true;
+		}
+		else{
+			helping = false;//
 		}
 		rc.setIndicatorString(2,""+MapFunctions.locToInt(target));
 		//int turnNum = Clock.getRoundNum();
@@ -41,7 +47,7 @@ public class Defense{
 		{
 			PASTRs = rc.sensePastrLocations(rc.getTeam());
 		}*/
-		if(near(myLoc, target, 16))
+		if(near(myLoc, target, 16)&!helping)
 		{
 			Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,10,rc.getTeam().opponent());
 			if (nearbyEnemies.length > 0 && rc.isActive()) {
@@ -58,6 +64,16 @@ public class Defense{
 				else{
 					inPosition = false;
 				}
+			}
+		}
+		else if(helping&&near(myLoc, target, 10)){
+			Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,10,rc.getTeam().opponent());
+			if (nearbyEnemies.length > 0 && rc.isActive()) {
+				RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
+				rc.attackSquare(robotInfo.location);
+			}
+			else{
+				helping = false;
 			}
 		}
 		else if(!inPosition){

@@ -137,12 +137,13 @@ public class RobotPlayer{
 				}else if(rc.getType()==RobotType.SOLDIER){
 					if(myJob == Job.UNASSIGNED){
 						int assignment = rc.readBroadcast(jobChannel);
-						if(assignment==2)
+						if(assignment==2) //used to be PASTR-noise
 						{
-							myJob = Job.PASTRBUILDER;
-						}
-						else if(assignment==3){
 							myJob = Job.NOISEBUILDER;
+							rc.setIndicatorString(1,"NOISE");
+						}
+						else if(assignment==4){
+							myJob = Job.PASTRBUILDER;
 						}
 						else if(assignment>6&&assignment%10>4)
 						{
@@ -191,11 +192,7 @@ public class RobotPlayer{
 					NoiseTower.runNoiseTower(rc, targetPath);
 				}
 				else if(rc.getType()==RobotType.PASTR){
-					Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,10,rc.getTeam().opponent());
-					if (nearbyEnemies.length > 0 && rc.isActive()) {
-						RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
-						rc.broadcast(PASTRHelpChannel, MapFunctions.locToInt(robotInfo.location));
-					}
+					rc.setIndicatorString(2, "PASTR");
 				}
 				rc.yield();
 			}catch (Exception e){

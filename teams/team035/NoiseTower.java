@@ -29,6 +29,7 @@ public class NoiseTower {
 	static MapLocation pathStart;
 	static int myBand = 60;
 	static MapLocation myLoc;
+	static int PASTRHelpChannel = 75;
 	
 	static public void runHQNoiseTower(RobotController rc) throws GameActionException{
 		Direction toEnemyHQ = rc.getLocation().directionTo(rc.senseEnemyHQLocation());
@@ -90,6 +91,15 @@ public class NoiseTower {
 	
 	static public void runNoiseTower(RobotController rc, MapLocation[] targetPath) throws GameActionException{
 		MapLocation myLoc = rc.getLocation();
+		Robot[] nearbyEnemies = rc.senseNearbyGameObjects(Robot.class,16,rc.getTeam().opponent());
+		if (nearbyEnemies.length > 0) {
+			rc.setIndicatorString(2, "ENEMY DETECTED");
+			RobotInfo robotInfo = rc.senseRobotInfo(nearbyEnemies[0]);
+			rc.broadcast(PASTRHelpChannel, MapFunctions.locToInt(robotInfo.location));
+		}
+		else{
+			rc.broadcast(PASTRHelpChannel, 0);
+		}
 		rc.setIndicatorString(0, ""+counter);
 		if(rc.isActive()&&targetPath[counter].x!=-100){
 			rc.attackSquare(targetPath[counter]);
